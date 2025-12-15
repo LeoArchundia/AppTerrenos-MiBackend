@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mis Apartados | Vista Azure</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary px-4">
+        <a class="navbar-brand" href="#">Mi Panel Cliente</a>
+        <div class="ms-auto">
+            <a href="/mapa.html" class="btn btn-outline-light btn-sm">🗺️ Ir al Mapa</a>
+            <button onclick="logout()" class="btn btn-danger btn-sm ms-2">Salir</button>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <h2 class="mb-4">📋 Historial de Apartados</h2>
+        
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Lote</th>
+                                <th>Detalles</th>
+                                <th>Fecha Apartado</th>
+                                <th>Estado</th>
+                                <th>Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-apartados">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function cargarMisApartados() {
+            const token = localStorage.getItem('token');
+            if (!token) window.location.href = '/login.html';
+
+            try {
+                const res = await fetch('/api/reservas/mis-apartados', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const apartados = await res.json();
+
+                const tbody = document.getElementById('lista-apartados');
+                tbody.innerHTML = '';
+
+                if (apartados.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center">No has apartado ningún terreno aún.</td></tr>';
+                    return;
+                }
+
+                apartados.forEach(a => {
+                    // Lógica visual para el estado
+                    let badgeClass = 'bg-secondary';
+                    if (a.ReservaStatus === 'Pending') badgeClass = 'bg-warning text-dark';
+                    if (a.ReservaStatus === 'Confirmed') badgeClass = 'bg-success';
+                    if (a.ReservaStatus === 'Cancelled') badgeClass = 'bg-danger';
+
+                    // Formato de fecha
+                    const fecha = new Date(a.CreatedAt).toLocaleDateString();
+
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><h5 class="mb-0 text-primary">${a.Code}</h5></td>
+                            <td>
+                                <small>Tamaño: ${a.Size} m²</small><br>
+                                <strong>$${a.Price.toLocaleString()}</strong>
+                            </td>
+                            <td>${fecha}</td>
+                            <td><span class="badge ${badgeClass}">${a.ReservaStatus}</span></td>
+                            <td>
+                                ${a.ReservaStatus === 'Pending' 
+                                    ? `<button class="btn btn-sm btn-success">💳 Pagar Ahora</button>` 
+                                    : '<span class="text-muted">Completo</span>'}
+                            </td>
+                        </tr>
+                    `;
+                });
+
+            } catch (error) {
+                console.error(error);
+                alert("Error cargando historial");
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = '/index.html';
+        }
+
+        cargarMisApartados();
+    </script>
+</body>
+</html>

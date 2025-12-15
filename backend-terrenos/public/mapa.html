@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Interactivo de Terrenos</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        
+        /* 2. ESTO ES LO QUE TE FALTA: DARLE ALTURA AL MAPA */
+        #map { 
+            height: 600px;  /* Altura fija */
+            width: 100%;    /* Ancho completo */
+            border: 2px solid #333; /* Borde para ver dónde está */
+            margin-top: 20px;
+            border-radius: 8px;
+        }
+        
+        /* Leyenda de colores */
+        .legend { margin-bottom: 10px; }
+        .dot { height: 12px; width: 12px; display: inline-block; border-radius: 50%; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+    <h1>Fraccionamiento "Vista Azure"</h1>
+    
+    <div style="margin-bottom: 15px;">
+    <a href="/panel.html" class="btn-panel">📂 Ver Mis Apartados</a>
+</div>
+
+<style>
+    .btn-panel {
+        display: inline-block;
+        background: #3498db;
+        color: white;
+        padding: 8px 15px;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+    }
+    .btn-panel:hover { background: #2980b9; }
+</style>
+
+    <div class="legend">
+        <span class="dot" style="background: #2ecc71;"></span>Disponible
+        <span class="dot" style="background: #f1c40f;"></span>Apartado
+        <span class="dot" style="background: #e74c3c;"></span>Vendido
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <script src="/js/mapa.js"></script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso | Vista Azure</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(120deg, #2980b9, #8e44ad);
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify_content: center;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            color: #495057;
+            font-weight: bold;
+            padding: 15px;
+        }
+        .nav-tabs .nav-link.active {
+            border-bottom: 3px solid #8e44ad;
+            color: #8e44ad;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card">
+                <ul class="nav nav-tabs nav-fill" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button">Iniciar Sesión</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button">Registrarse</button>
+                    </li>
+                </ul>
+
+                <div class="card-body p-4">
+                    <div class="tab-content" id="myTabContent">
+                        
+                        <div class="tab-pane fade show active" id="login" role="tabpanel">
+                            <h4 class="text-center mb-3">Bienvenido de nuevo</h4>
+                            <form id="formLogin">
+                                <div class="mb-3">
+                                    <label>Correo Electrónico</label>
+                                    <input type="email" id="loginEmail" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label>Contraseña</label>
+                                    <input type="password" id="loginPass" class="form-control" required>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">Entrar</button>
+                            </form>
+                        </div>
+
+                        <div class="tab-pane fade" id="register" role="tabpanel">
+                            <h4 class="text-center mb-3">Crear Cuenta</h4>
+                            <form id="formRegister">
+                                <div class="mb-3">
+                                    <label>Nombre Completo</label>
+                                    <input type="text" id="regName" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label>Correo Electrónico</label>
+                                    <input type="email" id="regEmail" class="form-control" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label>Contraseña</label>
+                                    <input type="password" id="regPass" class="form-control" required>
+                                </div>
+                                <button type="submit" class="btn btn-success w-100">Registrarse</button>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="text-center mt-3 text-white">
+                <a href="/index.html" class="text-white text-decoration-none">← Volver al Inicio</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 1. MANEJAR LOGIN
+    document.getElementById('formLogin').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPass').value;
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                // GUARDAR TOKEN EN EL NAVEGADOR
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('role', data.role);
+                localStorage.setItem('user', data.fullName);
+
+                alert("¡Bienvenido!");
+                
+                // Redirección inteligente: Si es admin al dashboard, si es cliente al mapa
+                if (data.role === 'admin') {
+                    // window.location.href = '/dashboard.html'; (Aún no creamos esta, mándalo al mapa por ahora)
+                    window.location.href = '/dashboard.html';
+                } else {
+                    window.location.href = '/mapa.html';
+                }
+            } else {
+                alert("Error: " + data.msg);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error de conexión con el servidor");
+        }
+    });
+
+    // 2. MANEJAR REGISTRO
+    document.getElementById('formRegister').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const fullName = document.getElementById('regName').value;
+        const email = document.getElementById('regEmail').value;
+        const password = document.getElementById('regPass').value;
+
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ fullName, email, password, role: 'client' }) // Por defecto todos son clientes
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                alert("Cuenta creada con éxito. Por favor inicia sesión.");
+                // Cambiar visualmente a la pestaña de login
+                document.getElementById('login-tab').click();
+            } else {
+                alert("Error: " + data.msg);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error al registrarse");
+        }
+    });
+</script>
+
+</body>
+</html>
