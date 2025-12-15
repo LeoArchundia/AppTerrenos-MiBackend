@@ -27,7 +27,7 @@ app.use('/api/terrenos', terrenoRoutes);
 iniciarTareaLiberacion();
 
 // 5. Iniciar Servidor
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
     console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
 });
