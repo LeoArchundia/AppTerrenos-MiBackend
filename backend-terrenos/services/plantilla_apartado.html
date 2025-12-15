@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Apartado de Terreno</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { width: 100%; max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .header { background-color: #007bff; color: white; padding: 15px; text-align: center; border-radius: 5px 5px 0 0; }
+        .content { padding: 20px; }
+        .details-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        .details-table th, .details-table td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+        .cta { text-align: center; margin: 30px 0; }
+        .cta a { background-color: #28a745; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .footer { font-size: 0.9em; color: #777; text-align: center; margin-top: 20px; border-top: 1px solid #eee; padding-top: 10px; }
+        .important-note { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; padding: 15px; border-radius: 5px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>🎉 Apartado de Terreno Confirmado</h2>
+        </div>
+        <div class="content">
+            <p>Estimado/a Cliente **{{client_name}}**,</p>
+            <p>Confirmamos que ha realizado el apartado del siguiente terreno. Su selección ha sido reservada con éxito. Para formalizar la compra y evitar la expiración de la reserva, debe continuar con el proceso.</p>
+
+            <h3>Detalles de su Reserva</h3>
+            <table class="details-table">
+                <tr>
+                    <th>Código de Terreno:</th>
+                    <td>**{{land_code}}**</td> 
+                </tr>
+                <tr>
+                    <th>Tamaño:</th>
+                    <td>**{{size_sqm}} m²**</td> 
+                </tr>
+                <tr>
+                    <th>Precio Total:</th>
+                    <td>**{{price_total}}**</td> 
+                </tr>
+                <tr>
+                    <th>Monto de Apartado (si aplica):</th>
+                    <td>**{{reservation_amount}}**</td> 
+                </tr>
+            </table>
+            
+            <div class="important-note">
+                <h3>⏰ Tiempo Límite para Continuar</h3>
+                <p>Su apartado tiene una duración de **{{duration_time}}** (ej. 48 horas).</p>
+                <p>La fecha y hora de expiración es: **{{expiration_date_time}}**</p>
+                <p>Si no completa la acción requerida antes de esta hora, el apartado expirará y el terreno volverá a estar disponible.</p>
+            </div>
+
+            <p>Para completar el pago restante o iniciar la formalización:</p>
+
+            <div class="cta">
+                <a href="{{payment_link}}">Continuar con el Pago / Proceso</a>
+            </div>
+            
+            <p><strong>Políticas de Seguimiento:</strong></p>
+            <ul>
+                <li>Este correo sirve como notificación de apartado a ambas partes para continuar el proceso[cite: 18].</li>
+                <li>Recuerde que debe seguir las políticas de seguimiento que le serán enviadas en el siguiente paso[cite: 19].</li>
+            </ul>
+
+        </div>
+        <div class="footer">
+            <p>Este es un correo de notificación automática. Por favor, no responda a este mensaje.</p>
+            <p>Administrador del Desarrollo Inmobiliario.</p>
+        </div>
+    </div>
+</body>
+</html>
