@@ -10,7 +10,7 @@ const authRoutes = require('./routes/authRoutes');
 const terrenoRoutes = require('./routes/terrenoRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const reservaRoutes = require('./routes/reservaRoutes');
-
+const emailRoutes = require('./routes/emailRoutes');
 const app = express();
 
 // 1. Middlewares
@@ -24,8 +24,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/terrenos', terrenoRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/reservas', reservaRoutes);
+app.use('/api/email', emailRoutes);
 app.use('/api/admin', adminRoutes);
-
 app.use('/api/dashboard', adminRoutes);
 
 // 3. Tareas Programadas

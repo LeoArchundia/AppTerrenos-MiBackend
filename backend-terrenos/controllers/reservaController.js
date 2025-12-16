@@ -1,8 +1,6 @@
 const { sql, connectDB } = require('../config/db');
 
-// C1. CORRECCIÓN: Usaremos 'sendEmail' como nombre, ya que 'confirmarVenta' lo usa.
-const sendEmail = require('../services/emailService'); 
-const { generarPlantillaApartado, generarPlantillaVenta } = require('../services/templates'); // Asegúrate de importar generarPlantillaVenta
+
 // ❌ PDF DESACTIVADO TEMPORALMENTE
 // const pdf = require('html-pdf');
 // const util = require('util');
@@ -14,55 +12,23 @@ const { generarPlantillaApartado, generarPlantillaVenta } = require('../services
 // 1. FUNCIÓN CREAR APARTADO
 exports.crearApartado = async (req, res) => {
     console.log("📥 --- INICIANDO PROCESO DE APARTADO ---");
-    
+
     const userId = req.user ? req.user.id : req.body.userId;
     const { landId } = req.body;
-    
+
     try {
         const pool = await connectDB();
 
-        // 🟢 RESTAURADO Y CORREGIDO: A. Obtener datos del usuario y terreno
-        const datos = await pool.request()
-            .input('UserId', sql.Int, userId)
-            .input('LandId', sql.Int, landId)
-            .query(`SELECT u.Email, u.FullName, l.Code, l.Price AS Price_Total, l.Size AS Size_Sqm, 1000.00 AS Reservation_Amount, GETDATE() AS Created_At FROM Users u, Lands l WHERE u.UserId = @UserId AND l.LandId = @LandId`);
-        
-        const info = datos.recordset[0];
-        if (!info) throw new Error("Usuario o Terreno no encontrado");
-        
-        // 🔍 1. Log de depuración: Muestra el Email recibido de la BD
-        console.log("Datos obtenidos de la BD:", info); 
-        console.log("Email del usuario para apartado:", info.Email);
-
-
-        // B. Ejecutar Apartado en BD
+        // Ejecutar Apartado
         await pool.request()
             .input('LandId', sql.Int, landId)
-            .input('UserId', sql.Int, userId) 
+            .input('UserId', sql.Int, userId)
             .input('DurationHours', sql.Int, 24)
             .execute('sp_ApartarTerreno');
 
-        console.log("✅ BD Actualizada.");
+        console.log("✅ Terreno apartado correctamente.");
 
-
-        // 🛑 2. Lógica Condicional: Intentar enviar correo SÓLO si info.Email existe
-        if (info.Email) {
-            // C. GENERACIÓN DEL PDF Y ENVÍO DEL CORREO
-            const { fullHtml, bodyHtml } = generarPlantillaApartado(info); 
-        
-            // Aquí usamos la función importada 'sendEmail'
-            await sendEmail({
-                to: info.Email, // Usamos el Email
-                subject: `Confirmación de Apartado - Terreno ${info.Code} [PDF Adjunto]`, 
-                html: bodyHtml, 
-                attachments: attachments 
-            });
-            console.log("✅ Correo de apartado enviado exitosamente.");
-        } else {
-            console.warn("⚠️ Advertencia: No se pudo enviar el correo de apartado porque el campo 'Email' del usuario es nulo o vacío.");
-        }
-
-        // D. OBTENER EL ID DE RESERVA
+        // Obtener reserva creada
         const newReservation = await pool.request()
             .input('LandId', sql.Int, landId)
             .input('UserId', sql.Int, userId)
@@ -71,30 +37,29 @@ exports.crearApartado = async (req, res) => {
                     ReservationId, 
                     LandId, 
                     Status, 
-                    1000.00 AS ReservationAmount
+                    CreatedAt, 
+                    ExpiresAt
                 FROM Reservations 
                 WHERE LandId = @LandId AND UserId = @UserId 
                 ORDER BY CreatedAt DESC
             `);
 
-        const resId = newReservation.recordset[0]?.ReservationId;
-        const amount = newReservation.recordset[0]?.ReservationAmount;
-
-        // E. ENVIAR LA RESPUESTA FINAL AL CLIENTE
-        res.json({ 
-            msg: 'Apartado exitoso. Se envió un correo de confirmación.',
-            reservationId: resId, 
-            amount: amount 
+        res.json({
+            msg: 'Apartado exitoso.',
+            reservation: newReservation.recordset[0]
         });
 
     } catch (error) {
         console.error("❌ Error en Apartado:", error);
-        if (error.number === 51001) { 
+
+        if (error.number === 51001) {
             return res.status(409).json({ msg: 'El terreno ya no está disponible.' });
         }
-        res.status(500).json({ msg: 'Error al procesar el apartado' });
+
+        res.status(500).json({ msg: 'Error al procesar el apartado.' });
     }
 };
+
 // ... (El resto del código de getMisApartados y confirmarVenta es correcto)
 
 // 2. FUNCIÓN OBTENER HISTORIAL (getMisApartados)
@@ -163,22 +128,8 @@ const confirmarVenta = async (req, res) => {
         }
         const landData = landResult.recordset[0];
 
-        // 3. Compilar datos para la plantilla y el PDF
-        const pdfData = {
-            BuyerFullName: buyerFullName, Email: buyerEmail, Code: landData.Code, Size: landData.Size,
-            Final_Price: finalPrice, Date_Sold: dateSold,
-        };
-        
-        // 4. Generar la plantilla y el PDF
-    const { fullHtml, bodyHtml } = generarPlantillaVenta(pdfData);
-        // 5. Enviar el correo al comprador
-        await sendEmail({
-    to: buyerEmail,
-    subject: `🎉 Confirmación de Venta Finalizada - Terreno ${landData.Code}`,
-    html: bodyHtml
-});
 
-        res.status(200).json({ msg: 'Venta confirmada, estado actualizado y correo enviado.' });
+        res.status(200).json({ msg: 'Venta confirmada, estado del terreno actualizado.' });
 
     } catch (error) {
         console.error('Error en confirmarVenta:', error);

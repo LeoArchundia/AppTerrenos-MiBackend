@@ -1,0 +1,62 @@
+const { sql, connectDB } = require('../config/db');
+const sendEmail = require('../services/emailService');
+const { generarPlantillaApartado } = require('../services/templates');
+
+/**
+ * Enviar correo de confirmación de apartado
+ * Se basa en ReservationId (NO en lógica de apartado)
+ */
+exports.enviarCorreoApartado = async (req, res) => {
+    const { reservationId } = req.params;
+
+    if (!reservationId) {
+        return res.status(400).json({ msg: 'ReservationId requerido.' });
+    }
+
+    try {
+        const pool = await connectDB();
+
+        // 🔎 Obtener datos del apartado
+        const result = await pool.request()
+            .input('ReservationId', sql.Int, reservationId)
+            .query(`
+                SELECT 
+                    u.Email,
+                    u.FullName,
+                    l.Code,
+                    l.Price AS Price_Total,
+                    l.Size AS Size_Sqm,
+                    r.CreatedAt AS Created_At,
+                    r.ExpiresAt
+                FROM Reservations r
+                JOIN Users u ON r.UserId = u.UserId
+                JOIN Lands l ON r.LandId = l.LandId
+                WHERE r.ReservationId = @ReservationId
+            `);
+
+        const info = result.recordset[0];
+
+        if (!info || !info.Email) {
+            return res.status(404).json({ msg: 'No se encontró información válida para enviar el correo.' });
+        }
+
+        // 🧩 Generar HTML del correo
+        const { bodyHtml } = generarPlantillaApartado(info);
+
+        // 📧 Enviar correo
+        await sendEmail(
+            info.Email,
+            `Confirmación de Apartado - Terreno ${info.Code}`,
+            bodyHtml
+        );
+
+        res.json({
+            msg: 'Correo de apartado enviado correctamente.',
+            email: info.Email
+        });
+
+    } catch (error) {
+        console.error('❌ Error al enviar correo de apartado:', error);
+        res.status(500).json({ msg: 'Error al enviar el correo de apartado.' });
+    }
+};
