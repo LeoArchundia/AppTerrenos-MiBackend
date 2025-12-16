@@ -124,11 +124,15 @@ exports.getMisApartados = async (req, res) => {
 
 // 3. FUNCIÓN CONFIRMAR VENTA (Ajustamos solo el punto C3)
 const confirmarVenta = async (req, res) => {
-    const { landId, buyerEmail, buyerFullName, finalPrice, dateSold, notes } = req.body;
+    // Desestructuramos el landId como 'landIdString' para evitar colisión con la variable parseada
+    const { landId: landIdString, buyerEmail, buyerFullName, finalPrice, dateSold, notes } = req.body;
     const userId = req.userId; 
 
-    if (!landId || !buyerEmail || !buyerFullName || !finalPrice) {
-        return res.status(400).json({ msg: 'Faltan datos obligatorios para confirmar la venta.' });
+    // CORRECCIÓN CRÍTICA: Convertir landId a entero
+    const landId = parseInt(landIdString);
+
+    if (isNaN(landId) || !landId || !buyerEmail || !buyerFullName || !finalPrice) {
+        return res.status(400).json({ msg: 'ID de terreno inválido o faltan datos obligatorios para confirmar la venta.' });
     }
 
     try {
@@ -137,7 +141,7 @@ const confirmarVenta = async (req, res) => {
 
         // 1. Actualizar el estado del terreno a 'Vendido'
         const updateResult = await pool.request()
-            .input('landId', sql.Int, landId)
+            .input('landId', sql.Int, landId) // Usamos landId (entero)
             .input('status', sql.NVarChar, 'Vendido')
             .query('UPDATE Lands SET Status = @status WHERE LandId = @landId'); // Corregir a 'Lands' si 'Terrenos' no es el nombre correcto de la tabla
 
@@ -147,7 +151,7 @@ const confirmarVenta = async (req, res) => {
 
         // 2. Obtener la información completa del terreno (para el correo/PDF)
         const landResult = await pool.request()
-            .input('landId', sql.Int, landId)
+            .input('landId', sql.Int, landId) // Usamos landId (entero)
             .query('SELECT Code, Size, Price FROM Lands WHERE LandId = @landId'); // Corregir a 'Lands'
 
         if (landResult.recordset.length === 0) {
@@ -184,6 +188,10 @@ const confirmarVenta = async (req, res) => {
 
     } catch (error) {
         console.error('Error en confirmarVenta:', error);
+        // Si el error es de base de datos, lo mostramos, si no, mostramos un error genérico
+        if (error.originalError && error.originalError.info) {
+             return res.status(500).json({ msg: 'Error de BD al procesar la venta.', details: error.originalError.info.message });
+        }
         res.status(500).json({ msg: 'Error interno del servidor al procesar la venta.', error: error.message });
     }
 };
