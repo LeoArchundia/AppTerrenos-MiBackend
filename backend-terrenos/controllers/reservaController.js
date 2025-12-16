@@ -22,18 +22,7 @@ exports.crearApartado = async (req, res) => {
         const datos = await pool.request()
             .input('UserId', sql.Int, userId)
             .input('LandId', sql.Int, landId)
-            .query(`
-                SELECT 
-                    u.Email, 
-                    u.FullName, 
-                    l.Code, 
-                    l.Price as Price_Total, // Cambiado para mapear mejor a la plantilla
-                    l.Size as Size_Sqm,       // Necesitas el tamaño (Size)
-                    1000.00 as Reservation_Amount, // Usar valor real si existe
-                    GETDATE() as Created_At
-                FROM Users u, Lands l 
-                WHERE u.UserId = @UserId AND l.LandId = @LandId
-            `);
+            .query(`SELECT u.Email, u.FullName, l.Code, l.Price AS Price_Total, l.Size AS Size_Sqm, 1000.00 AS Reservation_Amount, GETDATE() AS Created_At FROM Users u, Lands l WHERE u.UserId = @UserId AND l.LandId = @LandId`);
         
         const info = datos.recordset[0];
         if (!info) throw new Error("Usuario o Terreno no encontrado");
