@@ -43,23 +43,23 @@ exports.crearApartado = async (req, res) => {
         // 1. Generar HTML completo con datos inyectados para el PDF
         const { fullHtml, bodyHtml } = generarPlantillaApartado(info); 
         
-// controllers/reservaController.js - Sección C
+        // controllers/reservaController.js - Sección C
 
-// 2. Generar el buffer binario del PDF
-// Renombrado para claridad: pdfResult es el objeto completo
-const pdfResult = await pdfCreatePromise(fullHtml, { 
-    format: 'Letter',
-    orientation: 'portrait',
-    border: '1in'
-});
+        // 2. Generar el buffer binario del PDF
+        // Renombrado para claridad: pdfResult es el objeto completo
+        const pdfResult = await pdfCreatePromise(fullHtml, { 
+        format: 'Letter',
+        orientation: 'portrait',
+        border: '1in'
+        });
 
-// 3. Crear el objeto de adjunto
-// ¡CORRECCIÓN CLAVE AQUÍ! Usar pdfResult.buffer para obtener el contenido binario.
-const attachments = [{
-    filename: `Confirmacion_Apartado_${info.Code}.pdf`,
-    content: pdfResult.buffer, // <--- **DEBE SER .buffer**
-    contentType: 'application/pdf'
-}];
+        // 3. Crear el objeto de adjunto
+        // ¡CORRECCIÓN CLAVE AQUÍ! Usar pdfResult.buffer para obtener el contenido binario.
+        const attachments = [{
+        filename: `Confirmacion_Apartado_${info.Code}.pdf`,
+        content: pdfResult.buffer, // <--- **DEBE SER .buffer**
+        contentType: 'application/pdf'
+        }];
         
         // 4. Enviar el correo con el adjunto
         await enviarCorreo(
