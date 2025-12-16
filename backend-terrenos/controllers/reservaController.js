@@ -70,6 +70,33 @@ exports.crearApartado = async (req, res) => {
             attachments // El array de adjuntos que contiene el PDF
         );
 
+        // D. OBTENER EL ID DE RESERVA Y EL IMPORTE PARA EL FRONTEND
+        const newReservation = await pool.request()
+            .input('LandId', sql.Int, landId)
+            .input('UserId', sql.Int, userId)
+            .query(`
+                SELECT TOP 1 
+                    ReservationId, 
+                    LandId, 
+                    Status, 
+                    1000.00 AS ReservationAmount /* <-- Usamos 1000 como importe de apartado */
+                FROM Reservations 
+                WHERE LandId = @LandId AND UserId = @UserId 
+                ORDER BY CreatedAt DESC
+            `);
+
+        const resId = newReservation.recordset[0]?.ReservationId;
+        const amount = newReservation.recordset[0]?.ReservationAmount;
+
+        console.log(`✅ Apartado ID: ${resId} | Importe: ${amount}`);
+
+        // E. ENVIAR LA RESPUESTA FINAL AL CLIENTE (CORREGIDA)
+        res.json({ 
+            msg: 'Apartado exitoso y correo enviado con PDF adjunto.',
+            reservationId: resId, // <-- DEBE ENVIAR ESTO
+            amount: amount      // <-- Y DEBE ENVIAR ESTO
+        });
+
         res.json({ msg: 'Apartado exitoso y correo enviado con PDF adjunto.' });
 
     } catch (error) {
@@ -81,7 +108,38 @@ exports.crearApartado = async (req, res) => {
     }
 };
 
-// 2. FUNCIÓN OBTENER HISTORIAL (Se queda igual)
+// 2. FUNCIÓN OBTENER HISTORIAL (CORREGIDA)
 exports.getMisApartados = async (req, res) => {
-// ... (Tu código de historial se queda intacto)
+    const userId = req.user.id; 
+
+    if (!userId) {
+        return res.status(401).json({ msg: 'Usuario no autenticado.' });
+    }
+
+    try {
+        const pool = await connectDB();
+        
+        const result = await pool.request()
+            .input('UserId', sql.Int, userId)
+            .query(`
+                SELECT 
+                    r.ReservationId,
+                    r.CreatedAt,
+                    r.ExpiresAt,
+                    r.Status AS ReservaStatus,  /* <-- CAMBIO A ReserveraStatus */
+                    l.Code AS Code,             /* <-- CAMBIO A Code */
+                    l.Price AS Price,           /* <-- CAMBIO A Price */
+                    l.Size AS Size              /* <-- CAMBIO A Size */
+                FROM Reservations r
+                JOIN Lands l ON r.LandId = l.LandId
+                WHERE r.UserId = @UserId
+                ORDER BY r.CreatedAt DESC
+            `);
+            
+        res.json(result.recordset);
+        
+    } catch (error) {
+        console.error("Error al obtener mis reservas:", error);
+        res.status(500).json({ msg: 'Error al obtener el historial de reservas.' });
+    }
 };

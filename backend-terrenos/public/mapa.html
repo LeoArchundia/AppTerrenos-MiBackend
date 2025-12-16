@@ -12,23 +12,23 @@
         
         /* 2. ESTO ES LO QUE TE FALTA: DARLE ALTURA AL MAPA */
         #map { 
-            height: 600px;  /* Altura fija */
-            width: 100%;    /* Ancho completo */
+            block-size: 600px;  /* Altura fija */
+            inline-size: 100%;    /* Ancho completo */
             border: 2px solid #333; /* Borde para ver dónde está */
-            margin-top: 20px;
+            margin-block-start: 20px;
             border-radius: 8px;
         }
         
         /* Leyenda de colores */
-        .legend { margin-bottom: 10px; }
-        .dot { height: 12px; width: 12px; display: inline-block; border-radius: 50%; margin-right: 5px; }
+        .legend { margin-block-end: 10px; }
+        .dot { block-size: 12px; inline-size: 12px; display: inline-block; border-radius: 50%; margin-inline-end: 5px; }
     </style>
 </head>
 <body>
 
     <h1>Fraccionamiento "Vista Azure"</h1>
     
-    <div style="margin-bottom: 15px;">
+    <div style="margin-block-end: 15px;">
     <a href="/panel.html" class="btn-panel">📂 Ver Mis Apartados</a>
 </div>
 
