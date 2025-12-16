@@ -10,7 +10,7 @@ const pdfCreatePromise = util.promisify(pdf.create);
 // Si usas connectDB(), asegúrate de que sql.connect(dbConfig) sea reemplazado por await connectDB();
 
 
-// 1. FUNCIÓN CREAR APARTADO (Funciona, solo ajustamos la llamada a sendEmail)
+// 1. FUNCIÓN CREAR APARTADO
 exports.crearApartado = async (req, res) => {
     console.log("📥 --- INICIANDO PROCESO DE APARTADO ---");
     
@@ -20,7 +20,7 @@ exports.crearApartado = async (req, res) => {
     try {
         const pool = await connectDB();
 
-        // A. Obtener datos del usuario y terreno
+        // 🟢 RESTAURADO Y CORREGIDO: A. Obtener datos del usuario y terreno
         const datos = await pool.request()
             .input('UserId', sql.Int, userId)
             .input('LandId', sql.Int, landId)
@@ -29,6 +29,11 @@ exports.crearApartado = async (req, res) => {
         const info = datos.recordset[0];
         if (!info) throw new Error("Usuario o Terreno no encontrado");
         
+        // 🔍 1. Log de depuración: Muestra el Email recibido de la BD
+        console.log("Datos obtenidos de la BD:", info); 
+        console.log("Email del usuario para apartado:", info.Email);
+
+
         // B. Ejecutar Apartado en BD
         await pool.request()
             .input('LandId', sql.Int, landId)
@@ -38,26 +43,33 @@ exports.crearApartado = async (req, res) => {
 
         console.log("✅ BD Actualizada.");
 
-        // C. GENERACIÓN DEL PDF Y ENVÍO DEL CORREO
-        const { fullHtml, bodyHtml } = generarPlantillaApartado(info); 
-        
-        const pdfResult = await pdfCreatePromise(fullHtml, { 
-            format: 'Letter', orientation: 'portrait', border: '1in', timeout: 10000
-        });
 
-        const attachments = [{
-            filename: `Confirmacion_Apartado_${info.Code}.pdf`,
-            content: pdfResult.buffer, // <--- CORRECTO: Usa .buffer
-            contentType: 'application/pdf'
-        }];
-        
-        // CORRECCIÓN: Usar la función importada 'sendEmail'
-        await sendEmail({
-            to: info.Email, 
-            subject: `Confirmación de Apartado - Terreno ${info.Code} [PDF Adjunto]`, 
-            html: bodyHtml, 
-            attachments: attachments 
-        });
+        // 🛑 2. Lógica Condicional: Intentar enviar correo SÓLO si info.Email existe
+        if (info.Email) {
+            // C. GENERACIÓN DEL PDF Y ENVÍO DEL CORREO
+            const { fullHtml, bodyHtml } = generarPlantillaApartado(info); 
+            
+            const pdfResult = await pdfCreatePromise(fullHtml, { 
+                format: 'Letter', orientation: 'portrait', border: '1in', timeout: 10000
+            });
+
+            const attachments = [{
+                filename: `Confirmacion_Apartado_${info.Code}.pdf`,
+                content: pdfResult.buffer, 
+                contentType: 'application/pdf'
+            }];
+            
+            // Aquí usamos la función importada 'sendEmail'
+            await sendEmail({
+                to: info.Email, // Usamos el Email
+                subject: `Confirmación de Apartado - Terreno ${info.Code} [PDF Adjunto]`, 
+                html: bodyHtml, 
+                attachments: attachments 
+            });
+            console.log("✅ Correo de apartado enviado exitosamente.");
+        } else {
+            console.warn("⚠️ Advertencia: No se pudo enviar el correo de apartado porque el campo 'Email' del usuario es nulo o vacío.");
+        }
 
         // D. OBTENER EL ID DE RESERVA
         const newReservation = await pool.request()
@@ -92,6 +104,7 @@ exports.crearApartado = async (req, res) => {
         res.status(500).json({ msg: 'Error al procesar el apartado' });
     }
 };
+// ... (El resto del código de getMisApartados y confirmarVenta es correcto)
 
 // 2. FUNCIÓN OBTENER HISTORIAL (getMisApartados)
 exports.getMisApartados = async (req, res) => {
