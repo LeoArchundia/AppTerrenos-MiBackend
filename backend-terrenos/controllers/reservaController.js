@@ -1,7 +1,7 @@
 const { sql, connectDB } = require('../config/db');
 
 // C1. CORRECCIÓN: Usaremos 'sendEmail' como nombre, ya que 'confirmarVenta' lo usa.
-const { sendEmail } = require('../services/emailService'); 
+const sendEmail = require('../services/emailService'); 
 const { generarPlantillaApartado, generarPlantillaVenta } = require('../services/templates'); // Asegúrate de importar generarPlantillaVenta
 const pdf = require('html-pdf');
 const util = require('util');
