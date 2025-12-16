@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulario de Apartado de Terreno</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2 { color: #007bff; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-top: 25px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type="text"], input[type="email"], input[type="tel"], select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Importante para el padding */
+        }
+        .info-terreno { background-color: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .info-terreno p { margin: 5px 0; }
+        button { background-color: #28a745; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 20px; }
+        button:hover { background-color: #218838; }
+        .checkbox-group { margin-top: 20px; }
+        .error-message { color: red; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Formalización de Apartado</h1>
+        <form id="apartadoForm">
+            <h2>Información del Terreno Seleccionado</h2>
+            <div class="info-terreno">
+                <p><strong>Lote:</strong> <span id="landCodeDisplay">Cargando...</span></p>
+                <p><strong>Precio Total:</strong> <span id="priceTotalDisplay">Cargando...</span></p>
+                <p><strong>Tamaño:</strong> <span id="sizeSqmDisplay">Cargando...</span> m²</p>
+            </div>
+            
+            <input type="hidden" id="landIdInput" name="landId">
+            <input type="hidden" id="priceInput" name="price">
+
+            <h2>Información del Cliente</h2>
+            <label for="fullName">Nombre Completo:</label>
+            <input type="text" id="fullName" name="fullName" required>
+
+            <label for="email">Correo Electrónico:</label>
+            <input type="email" id="email" name="email" required>
+
+            <label for="phone">Número de Teléfono:</label>
+            <input type="tel" id="phone" name="phone" required>
+
+            <label for="city">Ciudad / Estado:</label>
+            <input type="text" id="city" name="city" required>
+
+            <h2>Sección de Pago</h2>
+            
+            <label>Monto del Apartado (30% del Precio):</label>
+            <input type="text" id="reservationAmountDisplay" disabled style="background-color: #ffe0b2; font-weight: bold;">
+            <input type="hidden" id="reservationAmountInput" name="reservationAmount">
+            
+            <label for="paymentMethod">Forma de Pago:</label>
+            <select id="paymentMethod" name="paymentMethod" required>
+                <option value="">Selecciona una opción</option>
+                <option value="Transferencia">Transferencia</option>
+                <option value="Deposito">Depósito</option>
+                <option value="Efectivo">Efectivo</option>
+            </select>
+            
+            <label for="apartadoDate">Fecha del Apartado:</label>
+            <input type="text" id="apartadoDate" name="apartadoDate" disabled value="Fecha actual (se establece por JS)">
+
+            <div class="checkbox-group">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms" style="display: inline;">Acepto que el apartado no garantiza la compra final.</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="privacy" name="privacy" required>
+                <label for="privacy" style="display: inline;">He leído y acepto el Aviso de privacidad.</label>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <button type="submit">Confirmar Apartado y Generar Documentos</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('apartadoForm');
+            const errorMessage = document.getElementById('errorMessage');
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // 1. Obtener y validar datos de la URL
+            const landId = urlParams.get('landId');
+            const code = urlParams.get('code');
+            const price = parseFloat(urlParams.get('price'));
+            const size = urlParams.get('size');
+            
+            if (!landId || !code || isNaN(price)) {
+                errorMessage.textContent = "Error: Faltan datos del terreno. Regresa al mapa.";
+                return;
+            }
+
+            // 2. Establecer fecha y monto de apartado
+            const reservationPercentage = 0.30; // 30%
+            const reservationAmount = price * reservationPercentage;
+            
+            const formatter = new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: 'MXN'
+            });
+
+            // 3. Mostrar y pre-llenar la información del terreno
+            document.getElementById('landCodeDisplay').textContent = code;
+            document.getElementById('priceTotalDisplay').textContent = formatter.format(price);
+            document.getElementById('sizeSqmDisplay').textContent = size;
+            
+            // 4. Mostrar el monto calculado y campos ocultos
+            document.getElementById('reservationAmountDisplay').value = formatter.format(reservationAmount);
+            document.getElementById('reservationAmountInput').value = reservationAmount.toFixed(2); // Valor numérico para backend
+            document.getElementById('landIdInput').value = landId;
+            document.getElementById('priceInput').value = price.toFixed(2);
+            
+            // 5. Mostrar fecha actual
+            const now = new Date();
+            document.getElementById('apartadoDate').value = now.toLocaleDateString('es-MX');
+
+            // 6. Manejar el envío del formulario
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorMessage.textContent = ''; // Limpiar errores
+
+                if (!document.getElementById('terms').checked || !document.getElementById('privacy').checked) {
+                    errorMessage.textContent = "Debes aceptar los términos y el aviso de privacidad.";
+                    return;
+                }
+
+                // Obtener el token de usuario (asumimos que sigue logueado)
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert("Tu sesión ha expirado. Por favor, inicia sesión de nuevo.");
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                const formData = {
+                    landId: landId, // Obtenido de la URL
+                    price: price, // Obtenido de la URL
+                    reservationAmount: reservationAmount, // Calculado
+                    fullName: document.getElementById('fullName').value,
+                    email: document.getElementById('email').value,
+                    phone: document.getElementById('phone').value,
+                    city: document.getElementById('city').value,
+                    paymentMethod: document.getElementById('paymentMethod').value
+                    // El Created_At (Fecha del Apartado) se manejará en el Backend (Azure)
+                };
+
+                // Deshabilitar botón para evitar envíos múltiples
+                const submitButton = form.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Procesando...';
+                
+                try {
+                    // LLAMADA FINAL AL BACKEND
+                    const response = await fetch('/api/reservas/apartar', {
+                        method: 'POST', 
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        alert(`✅ ¡Apartado Confirmado! Se ha enviado la documentación a ${formData.email}.`);
+                        // Aquí puedes redirigir al usuario a una página de éxito o al mapa.
+                        window.location.href = '/mapa.html'; 
+                    } else {
+                        errorMessage.textContent = data.msg || "Error al procesar el apartado. Intenta de nuevo.";
+                    }
+
+                } catch (error) {
+                    console.error('Error de red/servidor:', error);
+                    errorMessage.textContent = "Error de conexión con el servidor. Verifica tu red.";
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Confirmar Apartado y Generar Documentos';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -56,7 +56,7 @@ async function cargarTerrenos() {
                                 <p><strong>Estado:</strong> ${terreno.Status}</p>
                                 <p><strong>Precio:</strong> ${formattedPrice}</p>
                                 <p><strong>Tamaño:</strong> ${terreno.Size} m²</p>
-                                <button onclick="seleccionarTerreno(${terreno.LandId}, '${terreno.Status}', ${terreno.Price})" 
+                                <button onclick="seleccionarTerreno(${terreno.LandId}, '${terreno.Status}', ${terreno.Price}, '${terreno.Code}', ${terreno.Size})" 
                                     style="background: #007bff; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 4px;">
                                     ${terreno.Status === 'Disponible' ? '🛒 Apartar Ahora' : '🔒 Ver Detalles'}
                                 </button>
@@ -82,9 +82,9 @@ async function cargarTerrenos() {
 }
 
 // 5. Función que se ejecuta al dar clic en el botón del Popup
-// AÑADIMOS 'price' al argumento de la función (línea 105)
-async function seleccionarTerreno(landId, status, price) { 
-    
+// Ahora acepta LandId, Status, Price, Code y Size.
+function seleccionarTerreno(landId, status, price, code, size) { 
+
     // 1. Validación básica
     if (status !== 'Disponible') {
         alert("Este terreno no está disponible.");
@@ -93,7 +93,7 @@ async function seleccionarTerreno(landId, status, price) {
 
     // 2. Verificar si el usuario inició sesión
     const token = localStorage.getItem('token');
-    
+
     if (!token) {
         if(confirm("Para apartar necesitas iniciar sesión. ¿Ir al Login?")) {
             window.location.href = '/login.html';
@@ -101,53 +101,20 @@ async function seleccionarTerreno(landId, status, price) {
         return;
     }
 
-    // 3. Confirmación del usuario
-    if (!confirm("¿Estás seguro que deseas apartar este terreno?")) {
-        return;
-    }
-
-    // 4. ENVIAR LA ORDEN AL BACKEND (Apartar)
-    try {
-        const response = await fetch('/api/reservas/apartar', {
-            method: 'POST', 
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ 
-                landId: landId,
-                // Si el backend necesita el precio para el correo o la reserva, lo enviamos:
-                price: price 
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            // SI TODO SALIÓ BIEN, REDIRECCIONAMOS AL PAGO
-            const resId = data.reservationId;
-            const amount = data.amount || price; // Usamos el precio del apartado, o el precio completo
-
-            if (resId) {
-                alert("✅ Apartado exitoso. Serás redirigido al formulario de pago.");
-                
-                // *** REDIRECCIÓN AL FLUJO DE PAGO ***
-                window.location.href = `/payment.html?landId=${landId}&resId=${resId}&amount=${amount}`;
-            } else {
-                alert("✅ Apartado exitoso, pero el servidor no devolvió el ID de reserva. Recargando.");
-                location.reload(); 
-            }
-        } else {
-            // SI HUBO ERROR
-            alert("⚠️ Error: " + data.msg);
-        }
-
-    } catch (error) {
-        console.error(error);
-        alert("Error de conexión con el servidor.");
-    }
+    // 3. **NUEVO PASO: CONFIRMACIÓN Y REDIRECCIÓN AL FORMULARIO**
+    if (confirm("¿Estás seguro que deseas apartar este terreno? Serás redirigido al formulario de registro y pago.")) {
+        
+        // 4. Redirección, pasando TODOS los datos del terreno como parámetros de URL
+        window.location.href = `/formulario_apartado.html?
+            landId=${landId}&
+            code=${code}&
+            price=${price}&
+            size=${size}`;
+            
 }
-
+    // NOTA: Toda la lógica anterior de fetch('/api/reservas/apartar') se ha ELIMINADO de aquí.
+    // Esa llamada se realizará AHORA desde el nuevo formulario HTML, una vez que el usuario ingrese sus datos.
+}
 
 // *** CORRECCIÓN DEL ERROR DE SINTAXIS (Ln 114) ***
 // Aseguramos que la función seleccionarTerreno esté correctamente cerrada antes de la asignación.
