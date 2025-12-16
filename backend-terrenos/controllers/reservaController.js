@@ -50,7 +50,8 @@ exports.crearApartado = async (req, res) => {
         const pdfResult = await pdfCreatePromise(fullHtml, { 
         format: 'Letter',
         orientation: 'portrait',
-        border: '1in'
+        border: '1in',
+        timeout: 10000
         });
 
         // 3. Crear el objeto de adjunto

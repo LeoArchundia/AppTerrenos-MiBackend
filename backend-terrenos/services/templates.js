@@ -83,13 +83,25 @@ const APARTADO_TEMPLATE = `
  * @returns {object} Un objeto con el HTML completo para el PDF y un HTML simple para el cuerpo del correo.
  */
 const generarPlantillaApartado = (data) => {
-    // Formatear fechas y números
+    // Formatear números
     const formattedPrice = `$${(data.Price_Total || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
     const formattedReservation = `$${(data.Reservation_Amount || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
     
-    // Calcular la fecha de expiración (24 horas después de la creación)
-    const expirationDate = new Date(data.Created_At);
+    // CORRECCIÓN CLAVE: Manejo de la Fecha de Creación
+    let createdDate = new Date(data.Created_At);
+
+    // Si la fecha de la BD no es un formato válido para Node.js (Invalid Date), 
+    // usamos la fecha actual como fallback.
+    if (isNaN(createdDate.getTime())) {
+        console.error("DEBUG: La fecha de BD Created_At es inválida. Usando fecha actual.");
+        createdDate = new Date(); 
+    }
+
+    // Calcular la fecha de expiración (24 horas después de la creación/fallback)
+    const expirationDate = new Date(createdDate);
     expirationDate.setHours(expirationDate.getHours() + 24);
+    
+    // Formatear la fecha de expiración
     const formattedExpiration = expirationDate.toLocaleString('es-MX', {
         day: '2-digit', month: 'short', year: 'numeric',
         hour: '2-digit', minute: '2-digit', hour12: true
@@ -107,7 +119,7 @@ const generarPlantillaApartado = (data) => {
     fullHtml = fullHtml.replace(/{{expiration_date_time}}/g, formattedExpiration);
     fullHtml = fullHtml.replace(/{{payment_link}}/g, 'SU_URL_DE_PAGO_AQUI'); // **AJUSTAR ESTA URL**
 
-    // 2. Crear un cuerpo simple para el correo electrónico (lo que el cliente verá ANTES de abrir el PDF)
+    // 2. Crear un cuerpo simple para el correo electrónico
     const bodyHtml = `
         <div style="font-family: Arial, sans-serif;">
             <h2>¡Hola ${data.FullName || 'Cliente'}!</h2>
