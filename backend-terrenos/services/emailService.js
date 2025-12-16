@@ -8,23 +8,26 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// ACEPTA UN CUARTO PARÁMETRO: attachments. Por defecto, es un array vacío.
-const enviarCorreo = async (destinatario, asunto, htmlContent, attachments = []) => { 
+const enviarCorreo = async ({ to, subject, html, attachments = [] }) => {
+    if (!to) {
+        throw new Error('No recipients defined (emailService)');
+    }
+
     try {
         await transporter.sendMail({
             from: '"Vista Azure Inmobiliaria" <no-reply@vistaazure.com>',
-            to: destinatario,
-            subject: asunto,
-            html: htmlContent,
-            attachments: attachments // <-- 1. NUEVO: Se añade el array de adjuntos a la configuración
+            to,
+            subject,
+            html,
+            attachments
         });
-        
-        console.log(`📧 Correo enviado a ${destinatario} con ${attachments.length} adjuntos.`); // 2. Modificación para loguear los adjuntos
-        
+
+        console.log(`📧 Correo enviado a ${to} con ${attachments.length} adjuntos.`);
         return true;
+
     } catch (error) {
         console.error("❌ Error enviando correo:", error);
-        return false;
+        throw error;
     }
 };
 

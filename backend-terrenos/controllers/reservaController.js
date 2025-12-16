@@ -3,9 +3,10 @@ const { sql, connectDB } = require('../config/db');
 // C1. CORRECCIÓN: Usaremos 'sendEmail' como nombre, ya que 'confirmarVenta' lo usa.
 const sendEmail = require('../services/emailService'); 
 const { generarPlantillaApartado, generarPlantillaVenta } = require('../services/templates'); // Asegúrate de importar generarPlantillaVenta
-const pdf = require('html-pdf');
-const util = require('util');
-const pdfCreatePromise = util.promisify(pdf.create); 
+// ❌ PDF DESACTIVADO TEMPORALMENTE
+// const pdf = require('html-pdf');
+// const util = require('util');
+// const pdfCreatePromise = util.promisify(pdf.create);
 // Nota: La configuración de la BD (dbConfig) DEBE ser accesible aquí, si 'sql.connect(dbConfig)' falla.
 // Si usas connectDB(), asegúrate de que sql.connect(dbConfig) sea reemplazado por await connectDB();
 
@@ -48,17 +49,7 @@ exports.crearApartado = async (req, res) => {
         if (info.Email) {
             // C. GENERACIÓN DEL PDF Y ENVÍO DEL CORREO
             const { fullHtml, bodyHtml } = generarPlantillaApartado(info); 
-            
-            const pdfResult = await pdfCreatePromise(fullHtml, { 
-                format: 'Letter', orientation: 'portrait', border: '1in', timeout: 10000
-            });
-
-            const attachments = [{
-                filename: `Confirmacion_Apartado_${info.Code}.pdf`,
-                content: pdfResult.buffer, 
-                contentType: 'application/pdf'
-            }];
-            
+        
             // Aquí usamos la función importada 'sendEmail'
             await sendEmail({
                 to: info.Email, // Usamos el Email
@@ -91,7 +82,7 @@ exports.crearApartado = async (req, res) => {
 
         // E. ENVIAR LA RESPUESTA FINAL AL CLIENTE
         res.json({ 
-            msg: 'Apartado exitoso y correo enviado con PDF adjunto.',
+            msg: 'Apartado exitoso. Se envió un correo de confirmación.',
             reservationId: resId, 
             amount: amount 
         });
@@ -179,23 +170,13 @@ const confirmarVenta = async (req, res) => {
         };
         
         // 4. Generar la plantilla y el PDF
-        const { fullHtml, bodyHtml } = generarPlantillaVenta(pdfData);
-        
-        const pdfResult = await pdfCreatePromise(fullHtml, { 
-            format: 'Letter', orientation: 'portrait', border: '1in', timeout: 10000 
-        });
-
+    const { fullHtml, bodyHtml } = generarPlantillaVenta(pdfData);
         // 5. Enviar el correo al comprador
-        await sendEmail({ // Usamos sendEmail
-            to: buyerEmail,
-            subject: `🎉 Confirmación de Venta Finalizada - Terreno ${landData.Code}`,
-            html: bodyHtml,
-            attachments: [{
-                filename: `Certificado_Venta_${landData.Code}.pdf`,
-                content: pdfResult.buffer, // <--- C3. CORRECCIÓN: Usar .buffer
-                contentType: 'application/pdf'
-            }]
-        });
+        await sendEmail({
+    to: buyerEmail,
+    subject: `🎉 Confirmación de Venta Finalizada - Terreno ${landData.Code}`,
+    html: bodyHtml
+});
 
         res.status(200).json({ msg: 'Venta confirmada, estado actualizado y correo enviado.' });
 
