@@ -101,19 +101,17 @@ function seleccionarTerreno(landId, status, price, code, size) {
         return;
     }
 
-    // 3. **NUEVO PASO: CONFIRMACIÓN Y REDIRECCIÓN AL FORMULARIO**
+    // 3. Confirmación y Redirección al formulario
     if (confirm("¿Estás seguro que deseas apartar este terreno? Serás redirigido al formulario de registro y pago.")) {
         
-        // 4. Redirección, pasando TODOS los datos del terreno como parámetros de URL
-        window.location.href = `/formulario_apartado.html?
-            landId=${landId}&
-            code=${code}&
-            price=${price}&
-            size=${size}`;
-            
-}
-    // NOTA: Toda la lógica anterior de fetch('/api/reservas/apartar') se ha ELIMINADO de aquí.
-    // Esa llamada se realizará AHORA desde el nuevo formulario HTML, una vez que el usuario ingrese sus datos.
+        // 4. Redirección. Usamos encodeURIComponent para seguridad y quitamos saltos de línea.
+        const encodedCode = encodeURIComponent(code);
+        const encodedSize = encodeURIComponent(size);
+        
+        // Asegúrate de que esta línea esté construida correctamente.
+        window.location.href = `/formulario_apartado.html?landId=${landId}&code=${encodedCode}&price=${price}&size=${encodedSize}`;
+        
+    }
 }
 
 // *** CORRECCIÓN DEL ERROR DE SINTAXIS (Ln 114) ***
