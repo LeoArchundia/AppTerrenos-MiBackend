@@ -143,3 +143,84 @@ exports.getMisApartados = async (req, res) => {
         res.status(500).json({ msg: 'Error al obtener el historial de reservas.' });
     }
 };
+
+// --- NUEVA FUNCIÓN PARA CONFIRMAR VENTA ---
+const confirmarVenta = async (req, res) => {
+    // Los datos provienen del formulario_venta.html
+    const { landId, buyerEmail, buyerFullName, finalPrice, dateSold, notes } = req.body;
+    const userId = req.userId; // ID del usuario/agente logueado que realiza la confirmación
+
+    if (!landId || !buyerEmail || !buyerFullName || !finalPrice) {
+        return res.status(400).json({ msg: 'Faltan datos obligatorios para confirmar la venta.' });
+    }
+
+    try {
+        const pool = await sql.connect(dbConfig); // Asume que dbConfig está definido
+
+        // 1. Actualizar el estado del terreno a 'Vendido'
+        const updateResult = await pool.request()
+            .input('landId', sql.Int, landId)
+            .input('status', sql.NVarChar, 'Vendido')
+            .query('UPDATE Terrenos SET Status = @status WHERE LandId = @landId');
+
+        if (updateResult.rowsAffected[0] === 0) {
+            return res.status(404).json({ msg: 'Terreno no encontrado o ya vendido.' });
+        }
+
+        // 2. Obtener la información completa del terreno (para el correo/PDF)
+        const landResult = await pool.request()
+            .input('landId', sql.Int, landId)
+            .query('SELECT Code, Size, Price FROM Terrenos WHERE LandId = @landId');
+
+        if (landResult.recordset.length === 0) {
+            return res.status(404).json({ msg: 'Terreno actualizado, pero no se encontraron sus datos para el correo.' });
+        }
+        const landData = landResult.recordset[0];
+
+        // 3. Compilar todos los datos para la plantilla y el PDF
+        const pdfData = {
+            BuyerFullName: buyerFullName,
+            Email: buyerEmail,
+            Code: landData.Code,
+            Size: landData.Size,
+            Final_Price: finalPrice, // Usamos el precio final del formulario
+            Date_Sold: dateSold,
+            // Aquí podrías generar o recuperar ContractNumber si lo tuvieras
+        };
+        
+        // 4. Generar la plantilla y el PDF
+        const { fullHtml, bodyHtml } = generarPlantillaVenta(pdfData);
+        
+        const pdfResult = await pdfCreatePromise(fullHtml, { 
+            format: 'Letter',
+            orientation: 'portrait',
+            border: '1in',
+            timeout: 10000 // Mantener el timeout alto
+        });
+
+        // 5. Enviar el correo al comprador
+        await sendEmail({
+            to: buyerEmail,
+            subject: `🎉 Confirmación de Venta Finalizada - Terreno ${landData.Code}`,
+            html: bodyHtml,
+            attachments: [{
+                filename: `Certificado_Venta_${landData.Code}.pdf`,
+                content: pdfResult,
+                contentType: 'application/pdf'
+            }]
+        });
+
+        res.status(200).json({ msg: 'Venta confirmada, estado actualizado y correo enviado.' });
+
+    } catch (error) {
+        console.error('Error en confirmarVenta:', error);
+        res.status(500).json({ msg: 'Error interno del servidor al procesar la venta.', error: error.message });
+    }
+};
+
+// --- EXPORTAR LA NUEVA FUNCIÓN ---
+// Asegúrate de añadir confirmarVenta a tus exportaciones en reservaController.js
+module.exports = {
+    // ... (otras funciones existentes)
+    confirmarVenta 
+};

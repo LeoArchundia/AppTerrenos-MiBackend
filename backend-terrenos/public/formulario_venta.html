@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación Final de Venta</title>
+    <style>
+        /* (MANTENER ESTILOS SIMILARES AL FORMULARIO DE APARTADO) */
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; }
+        .container { max-width: 800px; margin: 0 auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1, h2 { color: #d9534f; border-bottom: 2px solid #d9534f; padding-bottom: 10px; margin-top: 25px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input[type="text"], input[type="email"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .info-terreno { background-color: #fcf8e3; padding: 15px; border-radius: 5px; margin-bottom: 20px; border: 1px solid #faebcc; }
+        button { background-color: #5cb85c; /* Verde éxito */ color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; margin-top: 20px; }
+        button:hover { background-color: #4cae4c; }
+        .error-message { color: red; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Cierre y Confirmación de Venta</h1>
+        <form id="ventaForm">
+            <h2>Detalles de la Transacción</h2>
+            <div class="info-terreno">
+                <p><strong>Lote:</strong> <span id="landCodeDisplay">Cargando...</span></p>
+                <p><strong>Precio Final de Venta:</strong> <span id="priceTotalDisplay">Cargando...</span></p>
+                <input type="hidden" id="landIdInput" name="landId">
+                <input type="hidden" id="priceInput" name="price">
+            </div>
+            
+            <h2>Información del Comprador</h2>
+            <label for="fullName">Nombre Completo del Comprador:</label>
+            <input type="text" id="fullName" name="fullName" required>
+
+            <label for="email">Correo Electrónico del Comprador:</label>
+            <input type="email" id="email" name="email" required>
+
+            <h2>Detalles del Cierre</h2>
+            
+            <label for="dateSold">Fecha de Venta / Cierre:</label>
+            <input type="date" id="dateSold" name="dateSold" required>
+            
+            <label for="finalPrice">Monto Total de Venta Final (para reconfirmar):</label>
+            <input type="text" id="finalPrice" name="finalPrice" required>
+
+            <label for="notes">Notas de la Transacción:</label>
+            <textarea id="notes" name="notes" rows="3"></textarea>
+            
+            <div class="error-message" id="errorMessage"></div>
+
+            <button type="submit">Confirmar Venta y Enviar Documentación Legal</button>
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('ventaForm');
+            const errorMessage = document.getElementById('errorMessage');
+            const urlParams = new URLSearchParams(window.location.search);
+
+            // Obtener datos de la URL (asume que la redirección pasa landId, code, price)
+            const landId = urlParams.get('landId');
+            const code = urlParams.get('code');
+            const price = parseFloat(urlParams.get('price'));
+            
+            if (!landId || !code || isNaN(price)) {
+                errorMessage.textContent = "Error: Faltan datos del terreno. No se puede confirmar la venta.";
+                return;
+            }
+
+            // Mostrar la información del terreno
+            const formatter = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+            document.getElementById('landCodeDisplay').textContent = code;
+            document.getElementById('priceTotalDisplay').textContent = formatter.format(price);
+            
+            // Pre-llenar campos ocultos y de reconfirmación
+            document.getElementById('landIdInput').value = landId;
+            document.getElementById('priceInput').value = price.toFixed(2);
+            document.getElementById('finalPrice').value = price.toFixed(2); // Pre-llenar el precio para reconfirmar
+            document.getElementById('dateSold').valueAsDate = new Date(); // Fecha actual
+
+            // Manejar el envío del formulario
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                errorMessage.textContent = ''; 
+
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    alert("Sesión expirada. Inicia sesión.");
+                    window.location.href = '/login.html';
+                    return;
+                }
+                
+                const formData = {
+                    landId: landId,
+                    buyerEmail: document.getElementById('email').value, // Email del comprador para el correo
+                    buyerFullName: document.getElementById('fullName').value,
+                    finalPrice: parseFloat(document.getElementById('finalPrice').value),
+                    dateSold: document.getElementById('dateSold').value,
+                    notes: document.getElementById('notes').value
+                    // El Backend se encargará de actualizar el status a 'Vendido'
+                };
+
+                const submitButton = form.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Cerrando Venta...';
+                
+                try {
+                    // LLAMADA AL NUEVO ENDPOINT DE VENTA
+                    const response = await fetch('/api/ventas/confirmar', {
+                        method: 'POST', 
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    if (response.ok) {
+                        alert("✅ Venta de terreno confirmada, se le enviará un correo con nueva información.");
+                        window.location.href = '/mapa.html'; 
+                    } else {
+                        const data = await response.json();
+                        errorMessage.textContent = data.msg || "Error al confirmar la venta.";
+                    }
+
+                } catch (error) {
+                    errorMessage.textContent = "Error de conexión con el servidor.";
+                } finally {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Confirmar Venta y Enviar Documentación Legal';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

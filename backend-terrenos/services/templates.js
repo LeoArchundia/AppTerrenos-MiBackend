@@ -137,4 +137,54 @@ const generarPlantillaApartado = (data) => {
     };
 };
 
-module.exports = { generarPlantillaApartado };
+// --- NUEVA CONSTANTE DE PLANTILLA DE VENTA ---
+const VENTA_FINALIZADA_TEMPLATE = `
+    <!DOCTYPE html>
+    <html lang="es">
+    </html>
+`;
+
+/**
+ * Función que toma los datos de la venta final y los inyecta en la plantilla HTML.
+ * @param {object} data - Los datos del usuario y del terreno para la venta final.
+ * @returns {object} Un objeto con el HTML completo para el PDF y un HTML simple para el cuerpo del correo.
+ */
+const generarPlantillaVenta = (data) => {
+    // Formatear el precio
+    const formattedPrice = `$${(data.Final_Price || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+    
+    // Formatear la fecha
+    const finalizationDate = new Date(data.Date_Sold || Date.now());
+    const formattedDate = finalizationDate.toLocaleDateString('es-MX', {
+        day: '2-digit', month: 'long', year: 'numeric'
+    });
+
+    let fullHtml = VENTA_FINALIZADA_TEMPLATE;
+
+    // 1. Reemplazar Placeholders en el HTML completo (para el PDF)
+    fullHtml = fullHtml.replace(/{{client_name}}/g, data.BuyerFullName || 'Cliente');
+    fullHtml = fullHtml.replace(/{{land_code}}/g, data.Code || 'N/A');
+    fullHtml = fullHtml.replace(/{{finalization_date}}/g, formattedDate);
+    // Nota: El número de contrato es un placeholder que debes llenar si tienes esa lógica.
+    fullHtml = fullHtml.replace(/{{contract_number}}/g, data.ContractNumber || 'N/A'); 
+    fullHtml = fullHtml.replace(/{{final_price}}/g, formattedPrice);
+
+    // 2. Crear un cuerpo simple para el correo electrónico
+    const bodyHtml = `
+        <div style="font-family: Arial, sans-serif;">
+            <h2>¡Felicidades, ${data.BuyerFullName || 'Cliente'}!</h2>
+            <p>La venta del terreno <strong>${data.Code || 'N/A'}</strong> ha sido finalizada con éxito.</p>
+            <p><strong>El PDF adjunto contiene el certificado de venta y todos los detalles formales de la transacción.</strong></p>
+            <p>Nuestro equipo legal se pondrá en contacto para iniciar los trámites de escrituración.</p>
+            <br>
+            <p>Atentamente,<br>Administración.</p>
+        </div>
+    `;
+
+    return {
+        fullHtml: fullHtml, // Usado para generar el PDF
+        bodyHtml: bodyHtml // Usado para el cuerpo del email
+    };
+};
+
+module.exports = { generarPlantillaApartado, generarPlantillaVenta }; // Asegúrate de exportar ambas
