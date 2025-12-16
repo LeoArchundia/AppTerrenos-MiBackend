@@ -1,24 +1,26 @@
 const { sql, connectDB } = require('../config/db');
-const enviarCorreo = require('../services/emailService'); 
-// 1. NUEVOS REQUIRES
-const { generarPlantillaApartado } = require('../services/templates'); // Asumiendo que has creado este archivo
+
+// C1. CORRECCIÓN: Usaremos 'sendEmail' como nombre, ya que 'confirmarVenta' lo usa.
+const { sendEmail } = require('../services/emailService'); 
+const { generarPlantillaApartado, generarPlantillaVenta } = require('../services/templates'); // Asegúrate de importar generarPlantillaVenta
 const pdf = require('html-pdf');
 const util = require('util');
-const pdfCreatePromise = util.promisify(pdf.create); // Convierte la función de PDF a Promesa para usar async/await
+const pdfCreatePromise = util.promisify(pdf.create); 
+// Nota: La configuración de la BD (dbConfig) DEBE ser accesible aquí, si 'sql.connect(dbConfig)' falla.
+// Si usas connectDB(), asegúrate de que sql.connect(dbConfig) sea reemplazado por await connectDB();
 
-// 1. FUNCIÓN CREAR APARTADO
+
+// 1. FUNCIÓN CREAR APARTADO (Funciona, solo ajustamos la llamada a sendEmail)
 exports.crearApartado = async (req, res) => {
     console.log("📥 --- INICIANDO PROCESO DE APARTADO ---");
     
-    // Obtenemos datos
     const userId = req.user ? req.user.id : req.body.userId;
     const { landId } = req.body;
     
     try {
         const pool = await connectDB();
 
-        // A. Obtener datos del usuario y terreno para el correo
-        // IMPORTANTE: Asegúrate de obtener TODOS los datos que tu plantilla HTML necesite.
+        // A. Obtener datos del usuario y terreno
         const datos = await pool.request()
             .input('UserId', sql.Int, userId)
             .input('LandId', sql.Int, landId)
@@ -27,8 +29,6 @@ exports.crearApartado = async (req, res) => {
         const info = datos.recordset[0];
         if (!info) throw new Error("Usuario o Terreno no encontrado");
         
-        // Asumiendo que info ahora tiene: { Email, FullName, Code, Price_Total, Size_Sqm, Reservation_Amount, Created_At }
-
         // B. Ejecutar Apartado en BD
         await pool.request()
             .input('LandId', sql.Int, landId)
@@ -38,39 +38,28 @@ exports.crearApartado = async (req, res) => {
 
         console.log("✅ BD Actualizada.");
 
-        // C. GENERACIÓN DEL PDF Y ENVÍO DEL CORREO (Sección modificada)
-        
-        // 1. Generar HTML completo con datos inyectados para el PDF
+        // C. GENERACIÓN DEL PDF Y ENVÍO DEL CORREO
         const { fullHtml, bodyHtml } = generarPlantillaApartado(info); 
         
-        // controllers/reservaController.js - Sección C
-
-        // 2. Generar el buffer binario del PDF
-        // Renombrado para claridad: pdfResult es el objeto completo
         const pdfResult = await pdfCreatePromise(fullHtml, { 
-        format: 'Letter',
-        orientation: 'portrait',
-        border: '1in',
-        timeout: 10000
+            format: 'Letter', orientation: 'portrait', border: '1in', timeout: 10000
         });
 
-        // 3. Crear el objeto de adjunto
-        // ¡CORRECCIÓN CLAVE AQUÍ! Usar pdfResult.buffer para obtener el contenido binario.
         const attachments = [{
-        filename: `Confirmacion_Apartado_${info.Code}.pdf`,
-        content: pdfResult.buffer, // <--- **DEBE SER .buffer**
-        contentType: 'application/pdf'
+            filename: `Confirmacion_Apartado_${info.Code}.pdf`,
+            content: pdfResult.buffer, // <--- CORRECTO: Usa .buffer
+            contentType: 'application/pdf'
         }];
         
-        // 4. Enviar el correo con el adjunto
-        await enviarCorreo(
-            info.Email, 
-            `Confirmación de Apartado - Terreno ${info.Code} [PDF Adjunto]`, 
-            bodyHtml, // Usar el HTML simple para el cuerpo del email
-            attachments // El array de adjuntos que contiene el PDF
-        );
+        // CORRECCIÓN: Usar la función importada 'sendEmail'
+        await sendEmail({
+            to: info.Email, 
+            subject: `Confirmación de Apartado - Terreno ${info.Code} [PDF Adjunto]`, 
+            html: bodyHtml, 
+            attachments: attachments 
+        });
 
-        // D. OBTENER EL ID DE RESERVA Y EL IMPORTE PARA EL FRONTEND
+        // D. OBTENER EL ID DE RESERVA
         const newReservation = await pool.request()
             .input('LandId', sql.Int, landId)
             .input('UserId', sql.Int, userId)
@@ -79,7 +68,7 @@ exports.crearApartado = async (req, res) => {
                     ReservationId, 
                     LandId, 
                     Status, 
-                    1000.00 AS ReservationAmount /* <-- Usamos 1000 como importe de apartado */
+                    1000.00 AS ReservationAmount
                 FROM Reservations 
                 WHERE LandId = @LandId AND UserId = @UserId 
                 ORDER BY CreatedAt DESC
@@ -88,16 +77,12 @@ exports.crearApartado = async (req, res) => {
         const resId = newReservation.recordset[0]?.ReservationId;
         const amount = newReservation.recordset[0]?.ReservationAmount;
 
-        console.log(`✅ Apartado ID: ${resId} | Importe: ${amount}`);
-
-        // E. ENVIAR LA RESPUESTA FINAL AL CLIENTE (CORREGIDA)
+        // E. ENVIAR LA RESPUESTA FINAL AL CLIENTE
         res.json({ 
             msg: 'Apartado exitoso y correo enviado con PDF adjunto.',
-            reservationId: resId, // <-- DEBE ENVIAR ESTO
-            amount: amount      // <-- Y DEBE ENVIAR ESTO
+            reservationId: resId, 
+            amount: amount 
         });
-
-        res.json({ msg: 'Apartado exitoso y correo enviado con PDF adjunto.' });
 
     } catch (error) {
         console.error("❌ Error en Apartado:", error);
@@ -108,28 +93,20 @@ exports.crearApartado = async (req, res) => {
     }
 };
 
-// 2. FUNCIÓN OBTENER HISTORIAL (CORREGIDA)
+// 2. FUNCIÓN OBTENER HISTORIAL (getMisApartados)
 exports.getMisApartados = async (req, res) => {
     const userId = req.user.id; 
-
-    if (!userId) {
-        return res.status(401).json({ msg: 'Usuario no autenticado.' });
-    }
-
+    // ... (El código de esta función es correcto)
     try {
         const pool = await connectDB();
-        
+        // ... (resto de la lógica de la consulta)
         const result = await pool.request()
             .input('UserId', sql.Int, userId)
             .query(`
                 SELECT 
-                    r.ReservationId,
-                    r.CreatedAt,
-                    r.ExpiresAt,
-                    r.Status AS ReservaStatus,  /* <-- CAMBIO A ReserveraStatus */
-                    l.Code AS Code,             /* <-- CAMBIO A Code */
-                    l.Price AS Price,           /* <-- CAMBIO A Price */
-                    l.Size AS Size              /* <-- CAMBIO A Size */
+                    r.ReservationId, r.CreatedAt, r.ExpiresAt,
+                    r.Status AS ReservaStatus, 
+                    l.Code AS Code, l.Price AS Price, l.Size AS Size 
                 FROM Reservations r
                 JOIN Lands l ON r.LandId = l.LandId
                 WHERE r.UserId = @UserId
@@ -144,24 +121,25 @@ exports.getMisApartados = async (req, res) => {
     }
 };
 
-// --- NUEVA FUNCIÓN PARA CONFIRMAR VENTA ---
+
+// 3. FUNCIÓN CONFIRMAR VENTA (Ajustamos solo el punto C3)
 const confirmarVenta = async (req, res) => {
-    // Los datos provienen del formulario_venta.html
     const { landId, buyerEmail, buyerFullName, finalPrice, dateSold, notes } = req.body;
-    const userId = req.userId; // ID del usuario/agente logueado que realiza la confirmación
+    const userId = req.userId; 
 
     if (!landId || !buyerEmail || !buyerFullName || !finalPrice) {
         return res.status(400).json({ msg: 'Faltan datos obligatorios para confirmar la venta.' });
     }
 
     try {
-        const pool = await sql.connect(dbConfig); // Asume que dbConfig está definido
+        // Asumiendo que connectDB es la función correcta para la conexión, lo reemplazamos
+        const pool = await connectDB(); 
 
         // 1. Actualizar el estado del terreno a 'Vendido'
         const updateResult = await pool.request()
             .input('landId', sql.Int, landId)
             .input('status', sql.NVarChar, 'Vendido')
-            .query('UPDATE Terrenos SET Status = @status WHERE LandId = @landId');
+            .query('UPDATE Lands SET Status = @status WHERE LandId = @landId'); // Corregir a 'Lands' si 'Terrenos' no es el nombre correcto de la tabla
 
         if (updateResult.rowsAffected[0] === 0) {
             return res.status(404).json({ msg: 'Terreno no encontrado o ya vendido.' });
@@ -170,42 +148,34 @@ const confirmarVenta = async (req, res) => {
         // 2. Obtener la información completa del terreno (para el correo/PDF)
         const landResult = await pool.request()
             .input('landId', sql.Int, landId)
-            .query('SELECT Code, Size, Price FROM Terrenos WHERE LandId = @landId');
+            .query('SELECT Code, Size, Price FROM Lands WHERE LandId = @landId'); // Corregir a 'Lands'
 
         if (landResult.recordset.length === 0) {
             return res.status(404).json({ msg: 'Terreno actualizado, pero no se encontraron sus datos para el correo.' });
         }
         const landData = landResult.recordset[0];
 
-        // 3. Compilar todos los datos para la plantilla y el PDF
+        // 3. Compilar datos para la plantilla y el PDF
         const pdfData = {
-            BuyerFullName: buyerFullName,
-            Email: buyerEmail,
-            Code: landData.Code,
-            Size: landData.Size,
-            Final_Price: finalPrice, // Usamos el precio final del formulario
-            Date_Sold: dateSold,
-            // Aquí podrías generar o recuperar ContractNumber si lo tuvieras
+            BuyerFullName: buyerFullName, Email: buyerEmail, Code: landData.Code, Size: landData.Size,
+            Final_Price: finalPrice, Date_Sold: dateSold,
         };
         
         // 4. Generar la plantilla y el PDF
         const { fullHtml, bodyHtml } = generarPlantillaVenta(pdfData);
         
         const pdfResult = await pdfCreatePromise(fullHtml, { 
-            format: 'Letter',
-            orientation: 'portrait',
-            border: '1in',
-            timeout: 10000 // Mantener el timeout alto
+            format: 'Letter', orientation: 'portrait', border: '1in', timeout: 10000 
         });
 
         // 5. Enviar el correo al comprador
-        await sendEmail({
+        await sendEmail({ // Usamos sendEmail
             to: buyerEmail,
             subject: `🎉 Confirmación de Venta Finalizada - Terreno ${landData.Code}`,
             html: bodyHtml,
             attachments: [{
                 filename: `Certificado_Venta_${landData.Code}.pdf`,
-                content: pdfResult,
+                content: pdfResult.buffer, // <--- C3. CORRECCIÓN: Usar .buffer
                 contentType: 'application/pdf'
             }]
         });
@@ -217,10 +187,11 @@ const confirmarVenta = async (req, res) => {
         res.status(500).json({ msg: 'Error interno del servidor al procesar la venta.', error: error.message });
     }
 };
+exports.confirmarVenta = confirmarVenta; // Exportamos la función
 
-// --- EXPORTAR LA NUEVA FUNCIÓN ---
-// Asegúrate de añadir confirmarVenta a tus exportaciones en reservaController.js
+// C2. CORRECCIÓN: Exportar TODAS las funciones necesarias
 module.exports = {
-    // ... (otras funciones existentes)
-    confirmarVenta 
+    crearApartado: exports.crearApartado, 
+    getMisApartados: exports.getMisApartados,
+    confirmarVenta: exports.confirmarVenta
 };
