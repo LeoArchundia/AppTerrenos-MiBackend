@@ -79,7 +79,7 @@
                             <td><span class="badge ${badgeClass}">${a.ReservaStatus}</span></td>
                             <td>
                                 ${a.ReservaStatus === 'Pending' 
-                                    ? `<button class="btn btn-sm btn-success">💳 Pagar Ahora</button>` 
+                                    ? `<button class="btn btn-sm btn-success">Corroborar venta</button>` 
                                     : '<span class="text-muted">Completo</span>'}
                             </td>
                         </tr>
@@ -91,6 +91,30 @@
                 alert("Error cargando historial");
             }
         }
+
+        /**
+ * Redirige al formulario de confirmación de venta, pasando los detalles del terreno.
+ * @param {number} landId - ID del terreno.
+ * @param {string} code - Código del lote (Ej: L-08).
+ * @param {number} price - Precio original del terreno.
+ * @param {number} size - Tamaño del terreno.
+ */
+function corroborarVenta(landId, code, price, size) {
+    if (confirm(`¿Iniciar el proceso de confirmación de venta para el lote ${code}?`)) {
+        // Redirección al nuevo formulario de venta, pasando todos los datos necesarios
+        const encodedCode = encodeURIComponent(code);
+        
+        window.location.href = `/formulario_venta.html?landId=${landId}&code=${encodedCode}&price=${price}&size=${size}`;
+    }
+}
+
+function logout() {
+    localStorage.clear();
+    window.location.href = '/index.html';
+}
+
+window.corroborarVenta = corroborarVenta; // Asegurarse de que esté accesible globalmente
+cargarMisApartados();
 
         function logout() {
             localStorage.clear();
