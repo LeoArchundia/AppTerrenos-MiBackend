@@ -39,7 +39,7 @@
         </div>
     </div>
 
-    <script>
+ <script>
         async function cargarMisApartados() {
             const token = localStorage.getItem('token');
             if (!token) window.location.href = '/login.html';
@@ -67,6 +67,9 @@
 
                     // Formato de fecha
                     const fecha = new Date(a.CreatedAt).toLocaleDateString();
+                    
+                    // Argumentos para la función JS
+                    const dataArgs = `${a.LandId}, '${a.Code}', ${a.Price}, '${a.Size}'`;
 
                     tbody.innerHTML += `
                         <tr>
@@ -79,7 +82,7 @@
                             <td><span class="badge ${badgeClass}">${a.ReservaStatus}</span></td>
                             <td>
                                 ${a.ReservaStatus === 'Pending' 
-                                    ? `<button class="btn btn-sm btn-success">Corroborar venta</button>` 
+                                    ? `<button onclick="corroborarVenta(${dataArgs})" class="btn btn-sm btn-success">✅ Corroborar Venta</button>` 
                                     : '<span class="text-muted">Completo</span>'}
                             </td>
                         </tr>
@@ -93,34 +96,22 @@
         }
 
         /**
- * Redirige al formulario de confirmación de venta, pasando los detalles del terreno.
- * @param {number} landId - ID del terreno.
- * @param {string} code - Código del lote (Ej: L-08).
- * @param {number} price - Precio original del terreno.
- * @param {number} size - Tamaño del terreno.
- */
-function corroborarVenta(landId, code, price, size) {
-    if (confirm(`¿Iniciar el proceso de confirmación de venta para el lote ${code}?`)) {
-        // Redirección al nuevo formulario de venta, pasando todos los datos necesarios
-        const encodedCode = encodeURIComponent(code);
-        
-        window.location.href = `/formulario_venta.html?landId=${landId}&code=${encodedCode}&price=${price}&size=${size}`;
-    }
-}
-
-function logout() {
-    localStorage.clear();
-    window.location.href = '/index.html';
-}
-
-window.corroborarVenta = corroborarVenta; // Asegurarse de que esté accesible globalmente
-cargarMisApartados();
+         * Redirige al formulario de confirmación de venta, pasando los detalles del terreno.
+         */
+        function corroborarVenta(landId, code, price, size) {
+            if (confirm(`¿Iniciar el proceso de confirmación de venta para el lote ${code}?`)) {
+                const encodedCode = encodeURIComponent(code);
+                
+                window.location.href = `/formulario_venta.html?landId=${landId}&code=${encodedCode}&price=${price}&size=${size}`;
+            }
+        }
 
         function logout() {
             localStorage.clear();
             window.location.href = '/index.html';
         }
 
+        // Ejecución al cargar la página
         cargarMisApartados();
     </script>
 </body>
