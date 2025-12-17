@@ -44,11 +44,11 @@ exports.enviarCorreoApartado = async (req, res) => {
         const { bodyHtml } = generarPlantillaApartado(info);
 
         // 📧 Enviar correo
-        await sendEmail(
-            info.Email,
-            `Confirmación de Apartado - Terreno ${info.Code}`,
-            bodyHtml
-        );
+        await sendEmail({
+    to: info.Email,
+    subject: `Confirmación de Apartado - Terreno ${info.Code}`,
+    html: bodyHtml
+});
 
         res.json({
             msg: 'Correo de apartado enviado correctamente.',
