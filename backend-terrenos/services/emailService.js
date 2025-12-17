@@ -15,7 +15,7 @@ const enviarCorreo = async ({ to, subject, html, attachments = [] }) => {
 
     try {
         await transporter.sendMail({
-            from: '"Vista Azure Inmobiliaria" <no-reply@vistaazure.com>',
+            from: `"Vista Azure Inmobiliaria" <${process.env.EMAIL_USER}>`,
             to,
             subject,
             html,
