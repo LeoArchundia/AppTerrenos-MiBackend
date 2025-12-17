@@ -60,3 +60,18 @@ exports.enviarCorreoApartado = async (req, res) => {
         res.status(500).json({ msg: 'Error al enviar el correo de apartado.' });
     }
 };
+
+exports.testEmail = async (req, res) => {
+    try {
+        await sendEmail({
+            to: process.env.EMAIL_USER,
+            subject: '📧 PRUEBA EMAIL AZURE',
+            html: '<h1>Correo de prueba exitoso</h1><p>Si ves esto, Nodemailer funciona.</p>'
+        });
+
+        res.json({ msg: 'Correo de prueba enviado correctamente' });
+    } catch (error) {
+        console.error('❌ Error en testEmail:', error);
+        res.status(500).json({ msg: 'Falló el envío de correo', error: error.message });
+    }
+};
