@@ -3,93 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inmobiliaria Vista Azure | Inicio</title>
+    <title>Vista Azure | Terrenos de Inversión en Tequisquiapan</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary-color: #764ba2;
+            --secondary-color: #2ecc71;
+            --accent-color: #667eea;
+            --dark-bg: #2c3e50;
+        }
+
         body {
-            /* Mantiene el degradado de fondo original */
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
+            font-family: 'Open Sans', sans-serif;
+            color: #333;
+            overflow-x: hidden;
         }
 
-        /* Nuevo contenedor para centrar todo y darle un efecto de tarjeta */
-        .main-container {
-            text-align: center;
-            padding: 40px 60px;
-            border-radius: 15px;
-            background: rgba(255, 255, 255, 0.15); /* Fondo semitransparente */
-            backdrop-filter: blur(5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-            max-width: 600px;
-        }
-
-        h1 { 
-            font-size: 2.8em; 
-            margin-bottom: 5px; /* Menos espacio */
-            letter-spacing: 1px;
+        h1, h2, h3 {
+            font-family: 'Montserrat', sans-serif;
             font-weight: 700;
         }
 
-        p { 
-            font-size: 1.2em; 
-            margin-bottom: 30px; 
-            opacity: 0.8; /* Ligeramente transparente */
-        }
-
-        .btn-group {
+        /* Hero Section Corregida */
+        .hero {
+            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), 
+                        url('https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1600');
+            background-size: cover;
+            background-position: center;
+            min-height: 90vh; /* Cambiado a min-height para asegurar visibilidad */
             display: flex;
-            gap: 20px; /* Espacio uniforme entre botones */
-            justify-content: center;
-            margin-top: 30px;
+            align-items: center;
+            color: white;
+            text-align: center;
         }
 
-        .btn {
-            padding: 15px 35px;
-            text-decoration: none;
-            border-radius: 30px;
+        .hero h1 { font-size: 3.5rem; text-shadow: 2px 2px 10px rgba(0,0,0,0.5); }
+        .hero p { font-size: 1.4rem; margin-bottom: 2rem; }
+
+        .btn-custom {
+            padding: 12px 35px;
+            border-radius: 50px;
             font-weight: bold;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        }
-        
-        /* Estilo para el botón Mapa */
-        .btn-mapa {
-            background-color: #ffffff;
-            color: #764ba2;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Estilo para el botón Ingresar (usando el verde de tu mapa) */
-        .btn-ingresar {
-            background-color: #2ecc71;
+        .btn-invest {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+        }
+
+        .btn-invest:hover {
+            background-color: #27ae60;
+            transform: scale(1.05);
             color: white;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+        .info-section { padding: 80px 0; background: #f9f9f9; }
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .gallery-img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            transition: transform 0.3s;
+        }
+
+        .card:hover .gallery-img { transform: scale(1.05); }
+
+        .cta-final {
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--primary-color) 100%);
+            padding: 100px 0;
+            color: white;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="main-container">
-        <h1>Bienvenido</h1>
-        
-        <p>Sistema de gestión y venta de terrenos inteligentes.</p>
 
-        <div class="btn-group">
-            <a href="/mapa.html" class="btn btn-mapa">
-                🗺️ Ver Mapa
-            </a>
-
-            <a href="/login.html" class="btn btn-ingresar">
-                👤 Ingresar
-            </a>
+    <header class="hero">
+        <div class="container">
+            <h1 class="mb-3">Tu Patrimonio en el Corazón de Tequisquiapan</h1>
+            <p>Terrenos inteligentes con alta plusvalía en el mejor Pueblo Mágico de Querétaro.</p>
+            <div class="d-flex justify-content-center gap-3">
+                <a href="#galeria" class="btn btn-outline-light btn-custom">Explorar Terrenos</a>
+                <a href="/login.html" class="btn btn-invest btn-custom">🚀 Invertir Ahora</a>
+            </div>
         </div>
-    </div>
+    </header>
+
+    <section class="info-section">
+        <div class="container text-center">
+            <h2 class="mb-5">¿Por qué invertir en Vista Azure?</h2>
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="feature-icon">📍</div>
+                    <h4>Ubicación Privilegiada</h4>
+                    <p>A solo minutos del centro de Tequisquiapan y la Ruta del Arte, Queso y Vino.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="feature-icon">📈</div>
+                    <h4>Plusvalía Garantizada</h4>
+                    <p>Crecimiento anual sostenido del 15% al 20% en la zona turística de Querétaro.</p>
+                </div>
+                <div class="col-md-4 mb-4">
+                    <div class="feature-icon">🛡️</div>
+                    <h4>Seguridad Jurídica</h4>
+                    <p>Propiedades escrituradas y listas para entrega inmediata con servicios premium.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="galeria" class="py-5" style="background-color: #ffffff;">
+        <div class="container text-center">
+            <h2 class="mb-2">Vive la Experiencia Tequisquiapan</h2>
+            <p class="text-muted mb-5">Un entorno diseñado para la tranquilidad y el crecimiento de tu patrimonio.</p>
+            
+            <div class="row">
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <img src="https://images.unsplash.com/photo-1512813195386-6cf811ad3542?auto=format&fit=crop&q=80&w=800" 
+                             class="gallery-img" 
+                             alt="Arquitectura Colonial Tequisquiapan">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">Cerca del Centro Histórico</h5>
+                            <p class="card-text text-muted">A minutos de la Parroquia de Santa María de la Asunción y sus portales coloniales llenos de vida.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <img src="https://www.dondeir.com/wp-content/uploads/2017/02/La-ruta-del-queso-y-el-vino-20174.png" 
+                             class="gallery-img" 
+                             alt="Viñedos en Tequisquiapan Querétaro">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">Ruta del Arte, Queso y Vino</h5>
+                            <p class="card-text text-muted">Inmerso en la zona vinícola más importante del centro del país. Disfruta de paisajes únicos cada fin de semana.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <img src="https://images.unsplash.com/photo-1442120108414-42e7ea50d0b5?auto=format&fit=crop&q=80&w=800" 
+                             class="gallery-img" 
+                             alt="Terreno Campestre en Querétaro">
+                        <div class="card-body">
+                            <h5 class="card-title text-primary">Arquitectura y Naturaleza</h5>
+                            <p class="card-text text-muted">El espacio perfecto para construir una casa de descanso bajo el sol de Querétaro, rodeado de aire puro.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="info-section bg-white">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h2>Invierte en 3 pasos sencillos</h2>
+                    <ul class="list-unstyled mt-4">
+                        <li class="mb-3"><strong>1. Explora el Mapa:</strong> Revisa la disponibilidad en tiempo real en nuestro visor interactivo.</li>
+                        <li class="mb-3"><strong>2. Elige tu Lote:</strong> Filtra por tamaño, precio y ubicación exacta dentro del fraccionamiento.</li>
+                        <li class="mb-3"><strong>3. Aparta en Línea:</strong> Inicia sesión para asegurar tu terreno con un pago inicial seguro.</li>
+                    </ul>
+                    <a href="/mapa.html" class="btn btn-primary btn-custom mt-3">🗺️ Ver Mapa Interactivo</a>
+                </div>
+                <div class="col-lg-6 mt-4 mt-lg-0">
+                    <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800" class="img-fluid rounded-4 shadow" alt="Inversión Segura">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-final">
+        <div class="container">
+            <h2 class="mb-4">¿Listo para asegurar tu futuro en Tequisquiapan?</h2>
+            <p class="mb-5">No dejes pasar la oportunidad de tener un pedazo de paraíso en Querétaro.</p>
+            <a href="/login.html" class="btn btn-invest btn-custom btn-lg">🚀 Registrarme e Invertir</a>
+        </div>
+    </section>
+
+    <footer class="py-4 bg-dark text-white text-center">
+        <p class="mb-0">&copy; 2025 Vista Azure Inversiones | Tequisquiapan, Querétaro.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
