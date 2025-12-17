@@ -2,9 +2,12 @@
 const map = L.map('map').setView([20.5183, -99.9074], 18); 
 
 // 2. Agregar la capa de calles (OpenStreetMap)
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
+L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+    maxZoom: 20,
+    subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+    attribution: '&copy; Google'
 }).addTo(map);
+
 
 // 3. Función para definir los colores según el estado
 function getColor(status) {
